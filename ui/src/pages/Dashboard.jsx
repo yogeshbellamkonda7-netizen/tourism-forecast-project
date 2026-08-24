@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Hero from '../components/Hero'
 import PredictionForm from '../components/PredictionForm'
 import PredictionResult from '../components/PredictionResult'
-import { predictTourismDemand } from '../services/api'
+import { predictTourismDemand, API_BASE_URL } from '../services/api'
 import { History, Trash2, ArrowLeftRight } from 'lucide-react'
 import { COUNTRIES } from '../services/countries'
 
@@ -76,7 +76,7 @@ export default function Dashboard() {
     setComparison(null)
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/compare', {
+      const response = await fetch(`${API_BASE_URL}/compare`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
