@@ -47,3 +47,59 @@ export async function predictTourismDemand(payload) {
 
   return response.json()
 }
+/**
+ * Fetches historical tourism data for a selected country.
+ *
+ * @param {string} country
+ * @returns {Promise<Array>}
+ */
+export async function getCountryHistory(country) {
+  const response = await fetch(
+    `${API_BASE_URL}/country-history/${encodeURIComponent(country)}`
+  )
+
+  if (!response.ok) {
+    let message = 'Unable to fetch country history.'
+
+    try {
+      const errorData = await response.json()
+      if (errorData.detail) {
+        message = errorData.detail
+      }
+    } catch {
+      // Keep default error message
+    }
+
+    throw new Error(message)
+  }
+
+  return response.json()
+}
+/**
+ * Fetches the top 3 countries based on predicted tourism receipts.
+ *
+ * @returns {Promise<Object>}
+ */
+export async function getTopCountries() {
+  const response = await fetch(
+    `${API_BASE_URL}/top-countries`
+  )
+
+  if (!response.ok) {
+    let message = 'Unable to fetch top predicted countries.'
+
+    try {
+      const errorData = await response.json()
+
+      if (errorData.detail) {
+        message = errorData.detail
+      }
+    } catch {
+      // Keep default error message
+    }
+
+    throw new Error(message)
+  }
+
+  return response.json()
+}

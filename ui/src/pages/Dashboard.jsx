@@ -2,9 +2,23 @@ import { useEffect, useState } from 'react'
 import Hero from '../components/Hero'
 import PredictionForm from '../components/PredictionForm'
 import PredictionResult from '../components/PredictionResult'
-import { predictTourismDemand, API_BASE_URL } from '../services/api'
+import {
+  predictTourismDemand,
+  getCountryHistory,
+  getTopCountries,
+  API_BASE_URL,
+} from '../services/api'
 import { History, Trash2, ArrowLeftRight } from 'lucide-react'
 import { COUNTRIES } from '../services/countries'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 
 const HISTORY_KEY = 'tourism_prediction_history'
 
@@ -17,6 +31,12 @@ export default function Dashboard() {
   const [status, setStatus] = useState('idle')
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [countryHistory, setCountryHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState('')
+  const [topCountries, setTopCountries] = useState([])
+  const [topCountriesLoading, setTopCountriesLoading] = useState(false)
+  const [topCountriesError, setTopCountriesError] = useState('')
 
   const [history, setHistory] = useState(() => {
     try {
@@ -29,6 +49,12 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
   }, [history])
+
+  useEffect(() => {
+  getTopCountries().then((data) => {
+    setTopCountries(data.rankings || [])
+  })
+}, [])
 
   const handlePredict = async (payload) => {
     setStatus('loading')
@@ -43,6 +69,31 @@ export default function Dashboard() {
 
       setResult(response)
       setStatus('success')
+      setHistoryLoading(true)
+setHistoryError('')
+
+try {
+  const historicalData = await getCountryHistory(payload.country)
+  setCountryHistory(historicalData.history || [])
+} catch (err) {
+  setHistoryError(err.message)
+  setCountryHistory([])
+} finally {
+  setHistoryLoading(false)
+}
+
+setTopCountriesLoading(true)
+setTopCountriesError('')
+
+try {
+  const rankingData = await getTopCountries()
+  setTopCountries(rankingData.rankings || [])
+} catch (err) {
+  setTopCountriesError(err.message)
+  setTopCountries([])
+} finally {
+  setTopCountriesLoading(false)
+}
 
       const historyItem = {
         id: Date.now(),
@@ -131,7 +182,115 @@ export default function Dashboard() {
             />
           </div>
         </div>
-      </section>
+            </section>
+
+      {/* Country Historical Analytics */}
+      {status === 'success' && (
+        <section className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+          <div className="mb-5">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
+              Country Historical Analytics
+            </h2>
+
+            <p className="mt-1 text-sm text-ink-soft">
+              Historical tourism trends for {result?.country}
+            </p>
+          </div>
+
+          {historyLoading ? (
+            <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+              <p className="text-sm text-ink-soft">
+                Loading historical data...
+              </p>
+            </div>
+          ) : historyError ? (
+            <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+              <p className="text-sm text-signal-high">
+                {historyError}
+              </p>
+            </div>
+          ) : countryHistory.length === 0 ? (
+            <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+              <p className="text-sm text-ink-soft">
+                No historical data available for this country.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+              {/* Tourism Receipts Chart */}
+              <div className="rounded-card border border-border bg-surface p-6 shadow-soft">
+                <h3 className="mb-4 text-base font-semibold text-ink">
+                  Tourism Receipts
+                </h3>
+
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={countryHistory}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" />
+                    <YAxis />
+                    <Tooltip />
+
+                    <Line
+                      type="monotone"
+                      dataKey="tourism_receipts"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Tourism Arrivals Chart */}
+              <div className="rounded-card border border-border bg-surface p-6 shadow-soft">
+                <h3 className="mb-4 text-base font-semibold text-ink">
+                  Tourism Arrivals
+                </h3>
+
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={countryHistory}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" />
+                    <YAxis />
+                    <Tooltip />
+
+                    <Line
+                      type="monotone"
+                      dataKey="tourism_arrivals"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Tourism Expenditure Chart */}
+              <div className="rounded-card border border-border bg-surface p-6 shadow-soft">
+                <h3 className="mb-4 text-base font-semibold text-ink">
+                  Tourism Expenditure
+                </h3>
+
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={countryHistory}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" />
+                    <YAxis />
+                    <Tooltip />
+
+                    <Line
+                      type="monotone"
+                      dataKey="tourism_expenditures"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Prediction History */}
       <section
@@ -219,15 +378,80 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+            
 
-      {/* Country Comparison */}
-      <section
-        id="compare"
+      {/* Top 3 Predicted Countries */}
+        <section
+  id="top-countries"
+  className="mx-auto max-w-6xl px-5 py-8 sm:px-8"
+>
+          <div className="mb-5">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
+              Top 3 Predicted Countries
+            </h2>
+
+            <p className="mt-1 text-sm text-ink-soft">
+              Countries ranked by predicted tourism receipts
+            </p>
+          </div>
+
+          {topCountriesLoading ? (
+            <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+              <p className="text-sm text-ink-soft">
+                Calculating rankings...
+              </p>
+            </div>
+          ) : topCountriesError ? (
+            <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+              <p className="text-sm text-signal-high">
+                {topCountriesError}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              {topCountries.map((item) => (
+                <div
+                  key={item.rank}
+                  className="rounded-card border border-border bg-surface p-6 text-center shadow-soft"
+                >
+                  <div className="text-3xl">
+                    {item.rank === 1
+                      ? '🥇'
+                      : item.rank === 2
+                      ? '🥈'
+                      : '🥉'}
+                  </div>
+
+                  <h3 className="mt-3 text-lg font-semibold text-ink">
+                    {item.country}
+                  </h3>
+
+                  <p className="mt-2 text-sm text-ink-soft">
+                    Predicted Tourism Receipts
+                  </p>
+
+                  <p className="mt-1 text-xl font-semibold text-ink">
+                    {(Number(item.predictedReceipts) / 1_000_000).toLocaleString(
+                        'en-IN',
+                          {
+                                  minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                             }
+                     )}{' '}
+                         M
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      
+
+      <section  id="compare"
         className="section-photo compare-photo mx-auto max-w-6xl px-5 py-8 sm:px-8"
       >
         <div className="mb-5 flex items-center gap-2">
           <ArrowLeftRight size={20} className="text-accent" />
-
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
             Country Comparison
           </h2>

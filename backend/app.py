@@ -175,7 +175,135 @@ def predict(data: dict):
         }
 
     return result
+# ==========================================
+# COUNTRY HISTORICAL DATA
+# ==========================================
 
+@app.get("/country-history/{country}")
+def country_history(country: str):
+
+    country_data = df[
+        df["country"].str.lower() == country.lower()
+    ].copy()
+
+    if country_data.empty:
+        return {
+            "error": f"No historical data available for {country}"
+        }
+
+    # Sort by year
+    country_data = country_data.sort_values("year")
+
+    # Select only the data needed for charts
+    history = country_data[
+        [
+            "year",
+            "tourism_receipts",
+            "tourism_arrivals",
+            "tourism_exports",
+            "tourism_expenditures"
+        ]
+    ].copy()
+
+    # Replace NaN values with None for JSON
+    history = history.astype(object).where(
+    pd.notnull(history),
+    None
+)
+
+    return {
+        "country": country,
+        "history": history.to_dict(
+            orient="records"
+        )
+    }
+
+# ==========================================
+# TOP 3 PREDICTED COUNTRIES
+# ==========================================
+
+# ==========================================
+# TOP 3 PREDICTED COUNTRIES
+# ==========================================
+
+@app.get("/top-countries")
+def top_countries():
+
+    # Exclude World Bank aggregate/region/group entries
+    excluded_keywords = [
+        "world",
+        "income",
+        "dividend",
+        "members",
+        "ibrd",
+        "ida",
+        "africa",
+        "asia",
+        "europe",
+        "caribbean",
+        "pacific",
+        "america",
+        "middle east",
+        "north africa",
+        "sub-saharan",
+        "south asia",
+        "central asia",
+        "euro area",
+        "european union",
+        "least developed",
+        "small states",
+        "fragile",
+        "heavily indebted",
+        "landlocked",
+        "oecd",
+    ]
+
+    countries = []
+
+    for country in df["country"].dropna().unique():
+
+        country_lower = country.lower()
+
+        if any(
+            keyword in country_lower
+            for keyword in excluded_keywords
+        ):
+            continue
+
+        countries.append(country)
+
+    predictions = []
+
+    for country in countries:
+
+        result = get_country_prediction(country)
+
+        if result is not None:
+            predictions.append({
+                "country": country,
+                "predictedReceipts": result["predictedReceipts"]
+            })
+
+    predictions.sort(
+        key=lambda x: x["predictedReceipts"],
+        reverse=True
+    )
+
+    top_three = predictions[:3]
+
+    rankings = []
+
+    for rank, item in enumerate(top_three, start=1):
+        rankings.append({
+            "rank": rank,
+            "country": item["country"],
+            "predictedReceipts": item["predictedReceipts"]
+        })
+
+    return {
+        "rankings": rankings,
+        "model": "Random Forest"
+    }
 
 # ==========================================
 # COUNTRY COMPARISON

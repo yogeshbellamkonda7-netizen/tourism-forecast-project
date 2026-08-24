@@ -2,6 +2,8 @@ import { Compass } from 'lucide-react'
 
 const NAV_LINKS = [
   { label: 'Predict', href: '#prediction' },
+    { label: 'History', href: '#history' },
+  { label: 'Top 3', href: '#top-countries' },
   { label: 'Comparison', href: '#compare' },
   { label: 'Model', href: '#model' },
 ]
@@ -9,7 +11,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   return (
     <header className="sticky top-0 z-30 border-b border-white/60 glass-nav shadow-[0_4px_20px_-18px_rgba(15,27,52,.45)]">
-      <div className="mx-auto flex w-full items-center justify-between px-8 py-3 sm:px-12 lg:px-16">
+      <div className="mx-auto flex w-full items-center px-8 py-3 sm:pl-12 sm:pr-2 lg:pl-16 lg:pr-2">
         <a href="#top" className="group flex items-center gap-3" aria-label="TourSight AI home">
           <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-white shadow-soft transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105">
             <Compass size={22} strokeWidth={2.2} />
@@ -21,7 +23,7 @@ export default function Navbar() {
           </span>
         </a>
 
-        <nav className="hidden items-center gap-3 sm:flex">
+        <nav className="ml-auto hidden items-center gap-3 sm:flex">
   {NAV_LINKS.map((link) => (
     <a
       key={link.label}
