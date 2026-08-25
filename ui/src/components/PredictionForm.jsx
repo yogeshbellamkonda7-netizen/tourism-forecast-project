@@ -19,10 +19,14 @@ export default function PredictionForm({ onSubmit, isLoading }) {
       return
     }
 
+    // Make sure the typed country is actually in the country list
+    if (!COUNTRIES.includes(country)) {
+      setError('Please select a valid country from the list.')
+      return
+    }
+
     setError('')
 
-    // IMPORTANT:
-    // Your original project uses country as the only user input.
     onSubmit({
       country,
     })
@@ -35,7 +39,7 @@ export default function PredictionForm({ onSubmit, isLoading }) {
       </h2>
 
       <p className="mt-1 text-sm text-ink-soft">
-        Select a country to generate a tourism receipts forecast.
+        Select or type a country to generate a tourism receipts forecast.
       </p>
 
       <form
@@ -58,32 +62,33 @@ export default function PredictionForm({ onSubmit, isLoading }) {
           <span className="text-signal-high">*</span>
         </label>
 
-        <select
+        <input
           id="country"
+          name="country"
+          type="text"
+          list="country-options"
           value={country}
           onChange={(e) => {
             setCountry(e.target.value)
             setError('')
           }}
+          placeholder="Type or select a country"
+          autoComplete="off"
           className={[
             'w-full rounded-xl border bg-canvas px-3.5 py-3 text-sm text-ink outline-none transition-colors',
             'focus:border-accent',
             error ? 'border-signal-high' : 'border-border',
           ].join(' ')}
-        >
-          <option value="" disabled>
-            Select a country
-          </option>
+        />
 
+        <datalist id="country-options">
           {COUNTRIES.map((countryName) => (
             <option
               key={countryName}
               value={countryName}
-            >
-              {countryName}
-            </option>
+            />
           ))}
-        </select>
+        </datalist>
 
         {error && (
           <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-signal-high">

@@ -626,7 +626,7 @@ try {
               Trained Models
             </h3>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
               <div className="rounded-xl bg-canvas p-4">
                 <p className="text-xs text-ink-faint">
@@ -669,6 +669,19 @@ try {
                   Regression model
                 </p>
               </div>
+                <div className="rounded-xl bg-canvas p-4">
+                <p className="text-xs text-ink-faint">
+                    Model 4
+                </p>
+
+                <p className="mt-2 font-semibold text-ink">
+                      Artificial Neural Network
+                 </p>
+
+                <p className="mt-1 text-xs text-ink-faint">
+                    Deep learning model
+                 </p>
+                 </div>
 
             </div>
           </div>
