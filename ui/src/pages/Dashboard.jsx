@@ -2,14 +2,22 @@ import { useEffect, useState } from 'react'
 import Hero from '../components/Hero'
 import PredictionForm from '../components/PredictionForm'
 import PredictionResult from '../components/PredictionResult'
+
 import {
   predictTourismDemand,
   getCountryHistory,
   getTopCountries,
   API_BASE_URL,
 } from '../services/api'
-import { History, Trash2, ArrowLeftRight } from 'lucide-react'
+
+import {
+  History,
+  Trash2,
+  ArrowLeftRight,
+} from 'lucide-react'
+
 import { COUNTRIES } from '../services/countries'
+
 import {
   LineChart,
   Line,
@@ -25,15 +33,19 @@ const HISTORY_KEY = 'tourism_prediction_history'
 export default function Dashboard() {
   const [countryA, setCountryA] = useState('')
   const [countryB, setCountryB] = useState('')
+
   const [compareLoading, setCompareLoading] = useState(false)
   const [compareError, setCompareError] = useState('')
   const [comparison, setComparison] = useState(null)
+
   const [status, setStatus] = useState('idle')
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+
   const [countryHistory, setCountryHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyError, setHistoryError] = useState('')
+
   const [topCountries, setTopCountries] = useState([])
   const [topCountriesLoading, setTopCountriesLoading] = useState(false)
   const [topCountriesError, setTopCountriesError] = useState('')
@@ -46,54 +58,60 @@ export default function Dashboard() {
     }
   })
 
+  // Save prediction history to browser
   useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+    localStorage.setItem(
+      HISTORY_KEY,
+      JSON.stringify(history)
+    )
   }, [history])
 
+  // Load Top 3 when dashboard opens
   useEffect(() => {
-    getTopCountries().then((data) => {
-      setTopCountries(data.rankings || [])
-    })
+    setTopCountriesLoading(true)
+
+    getTopCountries()
+      .then((data) => {
+        setTopCountries(data.rankings || [])
+      })
+      .catch((err) => {
+        setTopCountriesError(err.message)
+        setTopCountries([])
+      })
+      .finally(() => {
+        setTopCountriesLoading(false)
+      })
   }, [])
+
+  // =========================================================
+  // PREDICTION
+  // =========================================================
 
   const handlePredict = async (payload) => {
     setStatus('loading')
     setError(null)
 
     try {
+      // -------------------------------------------------------
+      // 1. GET MAIN PREDICTION FIRST
+      // -------------------------------------------------------
+
       const response = await predictTourismDemand(payload)
 
       if (response.error) {
         throw new Error(response.error)
       }
 
+      // -------------------------------------------------------
+      // 2. SHOW RESULT IMMEDIATELY
+      // -------------------------------------------------------
+
       setResult(response)
       setStatus('success')
-      setHistoryLoading(true)
-      setHistoryError('')
 
-      try {
-        const historicalData = await getCountryHistory(payload.country)
-        setCountryHistory(historicalData.history || [])
-      } catch (err) {
-        setHistoryError(err.message)
-        setCountryHistory([])
-      } finally {
-        setHistoryLoading(false)
-      }
-
-      setTopCountriesLoading(true)
-      setTopCountriesError('')
-
-      try {
-        const rankingData = await getTopCountries()
-        setTopCountries(rankingData.rankings || [])
-      } catch (err) {
-        setTopCountriesError(err.message)
-        setTopCountries([])
-      } finally {
-        setTopCountriesLoading(false)
-      }
+      // -------------------------------------------------------
+      // 3. SAVE PREDICTION HISTORY IMMEDIATELY
+      // -------------------------------------------------------
 
       const historyItem = {
         id: Date.now(),
@@ -104,21 +122,74 @@ export default function Dashboard() {
         date: new Date().toLocaleString(),
       }
 
-      setHistory((previous) => [historyItem, ...previous].slice(0, 10))
+      setHistory((previous) =>
+        [historyItem, ...previous].slice(0, 10)
+      )
+
+      // -------------------------------------------------------
+      // 4. COUNTRY HISTORY - BACKGROUND
+      // -------------------------------------------------------
+
+      setHistoryLoading(true)
+      setHistoryError('')
+
+      getCountryHistory(payload.country)
+        .then((historicalData) => {
+          setCountryHistory(
+            historicalData.history || []
+          )
+        })
+        .catch((err) => {
+          setHistoryError(err.message)
+          setCountryHistory([])
+        })
+        .finally(() => {
+          setHistoryLoading(false)
+        })
+
+      // -------------------------------------------------------
+      // 5. TOP 3 - BACKGROUND
+      // -------------------------------------------------------
+
+      setTopCountriesLoading(true)
+      setTopCountriesError('')
+
+      getTopCountries()
+        .then((rankingData) => {
+          setTopCountries(
+            rankingData.rankings || []
+          )
+        })
+        .catch((err) => {
+          setTopCountriesError(err.message)
+          setTopCountries([])
+        })
+        .finally(() => {
+          setTopCountriesLoading(false)
+        })
+
     } catch (err) {
       setError(err.message)
       setStatus('error')
     }
   }
 
+  // =========================================================
+  // COMPARISON
+  // =========================================================
+
   const handleCompare = async () => {
     if (!countryA || !countryB) {
-      setCompareError('Please select both countries.')
+      setCompareError(
+        'Please select both countries.'
+      )
       return
     }
 
     if (countryA === countryB) {
-      setCompareError('Please select two different countries.')
+      setCompareError(
+        'Please select two different countries.'
+      )
       return
     }
 
@@ -127,24 +198,30 @@ export default function Dashboard() {
     setComparison(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/compare`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          country_a: countryA,
-          country_b: countryB,
-        }),
-      })
+      const response = await fetch(
+        `${API_BASE_URL}/compare`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            country_a: countryA,
+            country_b: countryB,
+          }),
+        }
+      )
 
       const data = await response.json()
 
       if (!response.ok || data.error) {
-        throw new Error(data.error || 'Comparison failed.')
+        throw new Error(
+          data.error || 'Comparison failed.'
+        )
       }
 
       setComparison(data)
+
     } catch (err) {
       setCompareError(err.message)
     } finally {
@@ -152,21 +229,34 @@ export default function Dashboard() {
     }
   }
 
+  // =========================================================
+  // CLEAR HISTORY
+  // =========================================================
+
   const clearHistory = () => {
     setHistory([])
     localStorage.removeItem(HISTORY_KEY)
   }
 
+  // =========================================================
+  // UI
+  // =========================================================
+
   return (
     <main>
+
       <Hero />
 
-      {/* Prediction */}
+      {/* =====================================================
+          PREDICTION
+      ====================================================== */}
+
       <section
         id="prediction"
         className="section-photo prediction-photo mx-auto max-w-6xl px-5 py-6 sm:px-8"
       >
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+
           <div className="lg:col-span-3">
             <PredictionForm
               onSubmit={handlePredict}
@@ -181,13 +271,20 @@ export default function Dashboard() {
               error={error}
             />
           </div>
+
         </div>
       </section>
 
-      {/* Country Historical Analytics */}
+
+      {/* =====================================================
+          COUNTRY HISTORICAL ANALYTICS
+      ====================================================== */}
+
       {status === 'success' && (
         <section className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+
           <div className="mb-5">
+
             <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
               Country Historical Analytics
             </h2>
@@ -195,40 +292,57 @@ export default function Dashboard() {
             <p className="mt-1 text-sm text-ink-soft">
               Historical tourism trends for {result?.country}
             </p>
+
           </div>
 
           {historyLoading ? (
+
             <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
               <p className="text-sm text-ink-soft">
                 Loading historical data...
               </p>
             </div>
+
           ) : historyError ? (
+
             <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
               <p className="text-sm text-signal-high">
                 {historyError}
               </p>
             </div>
+
           ) : countryHistory.length === 0 ? (
+
             <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
               <p className="text-sm text-ink-soft">
                 No historical data available for this country.
               </p>
             </div>
+
           ) : (
+
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
-              {/* Tourism Receipts Chart */}
+              {/* Tourism Receipts */}
+
               <div className="rounded-card border border-border bg-surface p-6 shadow-soft">
+
                 <h3 className="mb-4 text-base font-semibold text-ink">
                   Tourism Receipts
                 </h3>
 
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={300}
+                >
                   <LineChart data={countryHistory}>
+
                     <CartesianGrid strokeDasharray="3 3" />
+
                     <XAxis dataKey="year" />
+
                     <YAxis />
+
                     <Tooltip />
 
                     <Line
@@ -237,21 +351,33 @@ export default function Dashboard() {
                       strokeWidth={3}
                       dot={{ r: 4 }}
                     />
+
                   </LineChart>
                 </ResponsiveContainer>
+
               </div>
 
-              {/* Tourism Arrivals Chart */}
+
+              {/* Tourism Arrivals */}
+
               <div className="rounded-card border border-border bg-surface p-6 shadow-soft">
+
                 <h3 className="mb-4 text-base font-semibold text-ink">
                   Tourism Arrivals
                 </h3>
 
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={300}
+                >
                   <LineChart data={countryHistory}>
+
                     <CartesianGrid strokeDasharray="3 3" />
+
                     <XAxis dataKey="year" />
+
                     <YAxis />
+
                     <Tooltip />
 
                     <Line
@@ -260,21 +386,33 @@ export default function Dashboard() {
                       strokeWidth={3}
                       dot={{ r: 4 }}
                     />
+
                   </LineChart>
                 </ResponsiveContainer>
+
               </div>
 
-              {/* Tourism Expenditure Chart */}
+
+              {/* Tourism Expenditure */}
+
               <div className="rounded-card border border-border bg-surface p-6 shadow-soft">
+
                 <h3 className="mb-4 text-base font-semibold text-ink">
                   Tourism Expenditure
                 </h3>
 
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={300}
+                >
                   <LineChart data={countryHistory}>
+
                     <CartesianGrid strokeDasharray="3 3" />
+
                     <XAxis dataKey="year" />
+
                     <YAxis />
+
                     <Tooltip />
 
                     <Line
@@ -283,27 +421,42 @@ export default function Dashboard() {
                       strokeWidth={3}
                       dot={{ r: 4 }}
                     />
+
                   </LineChart>
                 </ResponsiveContainer>
+
               </div>
 
             </div>
+
           )}
+
         </section>
       )}
 
-      {/* Prediction History */}
+
+      {/* =====================================================
+          PREDICTION HISTORY
+      ====================================================== */}
+
       <section
         id="history"
         className="section-photo history-photo mx-auto max-w-6xl px-5 py-8 sm:px-8"
       >
+
         <div className="mb-4 flex items-center justify-between">
+
           <div className="flex items-center gap-2">
-            <History size={20} className="text-accent" />
+
+            <History
+              size={20}
+              className="text-accent"
+            />
 
             <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
               Prediction History
             </h2>
+
           </div>
 
           {history.length > 0 && (
@@ -316,10 +469,14 @@ export default function Dashboard() {
               Clear History
             </button>
           )}
+
         </div>
 
+
         {history.length === 0 ? (
+
           <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+
             <History
               size={28}
               className="mx-auto mb-3 text-ink-faint"
@@ -329,16 +486,24 @@ export default function Dashboard() {
             <p className="text-sm text-ink-soft">
               Your previous predictions will appear here.
             </p>
+
           </div>
+
         ) : (
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
             {history.map((item) => (
+
               <div
                 key={item.id}
                 className="rounded-card border border-border bg-surface p-5 shadow-soft"
               >
+
                 <div className="flex items-start justify-between">
+
                   <div>
+
                     <h3 className="font-display text-lg font-semibold text-ink">
                       {item.country}
                     </h3>
@@ -346,46 +511,68 @@ export default function Dashboard() {
                     <p className="mt-1 text-xs text-ink-faint">
                       Prediction year: {item.year}
                     </p>
+
                   </div>
 
                   <span className="rounded-full border border-accent/25 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
                     {item.model}
                   </span>
+
                 </div>
 
+
                 <div className="mt-4">
+
                   <p className="text-xs uppercase tracking-wide text-ink-faint">
                     Predicted Tourism Receipts
                   </p>
 
                   <p className="num-display mt-1 text-3xl font-semibold text-ink">
-                    {(Number(item.prediction) / 1_000_000).toLocaleString(
+
+                    {(
+                      Number(item.prediction) /
+                      1_000_000
+                    ).toLocaleString(
                       'en-IN',
                       {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       }
                     )}{' '}
+
                     M
+
                   </p>
+
                 </div>
+
 
                 <p className="mt-3 text-xs text-ink-faint">
                   {item.date}
                 </p>
+
               </div>
+
             ))}
+
           </div>
+
         )}
+
       </section>
 
 
-      {/* Top 3 Predicted Countries */}
+      {/* =====================================================
+          TOP 3 PREDICTED COUNTRIES
+      ====================================================== */}
+
       <section
         id="top-countries"
         className="mx-auto max-w-6xl px-5 py-8 sm:px-8"
       >
+
         <div className="mb-5">
+
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
             Top 3 Predicted Countries
           </h2>
@@ -393,33 +580,49 @@ export default function Dashboard() {
           <p className="mt-1 text-sm text-ink-soft">
             Countries ranked by predicted tourism receipts
           </p>
+
         </div>
 
+
         {topCountriesLoading ? (
+
           <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+
             <p className="text-sm text-ink-soft">
               Calculating rankings...
             </p>
+
           </div>
+
         ) : topCountriesError ? (
+
           <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+
             <p className="text-sm text-signal-high">
               {topCountriesError}
             </p>
+
           </div>
+
         ) : (
+
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+
             {topCountries.map((item) => (
+
               <div
                 key={item.rank}
                 className="rounded-card border border-border bg-surface p-6 text-center shadow-soft"
               >
+
                 <div className="text-3xl">
+
                   {item.rank === 1
                     ? '🥇'
                     : item.rank === 2
-                      ? '🥈'
-                      : '🥉'}
+                    ? '🥈'
+                    : '🥉'}
+
                 </div>
 
                 <h3 className="mt-3 text-lg font-semibold text-ink">
@@ -431,36 +634,64 @@ export default function Dashboard() {
                 </p>
 
                 <p className="mt-1 text-xl font-semibold text-ink">
-                  {(Number(item.predictedReceipts) / 1_000_000).toLocaleString(
+
+                  {(
+                    Number(item.predictedReceipts) /
+                    1_000_000
+                  ).toLocaleString(
                     'en-IN',
                     {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     }
                   )}{' '}
+
                   M
+
                 </p>
+
               </div>
+
             ))}
+
           </div>
+
         )}
+
       </section>
 
 
-      <section id="compare"
+      {/* =====================================================
+          COUNTRY COMPARISON
+      ====================================================== */}
+
+      <section
+        id="compare"
         className="section-photo compare-photo mx-auto max-w-6xl px-5 py-8 sm:px-8"
       >
+
         <div className="mb-5 flex items-center gap-2">
-          <ArrowLeftRight size={20} className="text-accent" />
+
+          <ArrowLeftRight
+            size={20}
+            className="text-accent"
+          />
+
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
             Country Comparison
           </h2>
+
         </div>
 
+
         <div className="rounded-card border border-border bg-surface p-6 shadow-soft">
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
+            {/* Country 1 */}
+
             <div>
+
               <label className="mb-1.5 block text-sm font-medium text-ink">
                 Country 1
               </label>
@@ -477,9 +708,14 @@ export default function Dashboard() {
                 autoComplete="off"
                 className="w-full rounded-xl border border-border bg-canvas px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent"
               />
+
             </div>
 
+
+            {/* Country 2 */}
+
             <div>
+
               <label className="mb-1.5 block text-sm font-medium text-ink">
                 Country 2
               </label>
@@ -487,25 +723,37 @@ export default function Dashboard() {
               <input
                 type="text"
                 list="comparison-countries"
-                value={countryA}
+                value={countryB}
                 onChange={(e) => {
-                  setCountryA(e.target.value)
+                  setCountryB(e.target.value)
                   setCompareError('')
                 }}
                 placeholder="Type or select country"
                 autoComplete="off"
                 className="w-full rounded-xl border border-border bg-canvas px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent"
               />
-              <datalist id="comparison-countries">
-                {COUNTRIES.map((country) => (
-                  <option key={country} value={country} />
-                ))}
-              </datalist>
+
             </div>
 
           </div>
 
+
+          {/* Country suggestions */}
+
+          <datalist id="comparison-countries">
+
+            {COUNTRIES.map((country) => (
+              <option
+                key={country}
+                value={country}
+              />
+            ))}
+
+          </datalist>
+
+
           <div className="mt-5 text-center">
+
             <button
               type="button"
               onClick={handleCompare}
@@ -517,9 +765,15 @@ export default function Dashboard() {
               }
               className="rounded-full bg-ink px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {compareLoading ? 'Comparing...' : 'Compare Countries'}
+
+              {compareLoading
+                ? 'Comparing...'
+                : 'Compare Countries'}
+
             </button>
+
           </div>
+
 
           {compareError && (
             <p className="mt-4 text-center text-sm font-medium text-signal-high">
@@ -527,12 +781,17 @@ export default function Dashboard() {
             </p>
           )}
 
+
           {comparison && (
+
             <div className="mt-6">
+
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
                 {/* Country A */}
+
                 <div className="rounded-xl border border-border bg-canvas p-5">
+
                   <h3 className="text-xl font-semibold text-ink">
                     {comparison.country_a.country}
                   </h3>
@@ -542,23 +801,34 @@ export default function Dashboard() {
                   </p>
 
                   <p className="num-display mt-1 text-3xl font-semibold text-ink">
+
                     {(
-                      Number(comparison.country_a.predictedReceipts) /
-                      1_000_000
-                    ).toLocaleString('en-IN', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{' '}
+                      Number(
+                        comparison.country_a.predictedReceipts
+                      ) / 1_000_000
+                    ).toLocaleString(
+                      'en-IN',
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }
+                    )}{' '}
+
                     M
+
                   </p>
 
                   <p className="mt-2 text-xs text-ink-faint">
                     Data year: {comparison.country_a.year_used}
                   </p>
+
                 </div>
 
+
                 {/* Country B */}
+
                 <div className="rounded-xl border border-border bg-canvas p-5">
+
                   <h3 className="text-xl font-semibold text-ink">
                     {comparison.country_b.country}
                   </h3>
@@ -568,48 +838,73 @@ export default function Dashboard() {
                   </p>
 
                   <p className="num-display mt-1 text-3xl font-semibold text-ink">
+
                     {(
-                      Number(comparison.country_b.predictedReceipts) /
-                      1_000_000
-                    ).toLocaleString('en-IN', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{' '}
+                      Number(
+                        comparison.country_b.predictedReceipts
+                      ) / 1_000_000
+                    ).toLocaleString(
+                      'en-IN',
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }
+                    )}{' '}
+
                     M
+
                   </p>
 
                   <p className="mt-2 text-xs text-ink-faint">
                     Data year: {comparison.country_b.year_used}
                   </p>
+
                 </div>
 
               </div>
 
+
               <div className="mt-4 rounded-xl border border-accent/20 bg-accent/5 p-4 text-center">
+
                 <p className="text-sm font-semibold text-ink">
                   {comparison.summary}
                 </p>
+
               </div>
+
             </div>
+
           )}
+
         </div>
+
       </section>
 
-      {/* Model Information */}
+
+      {/* =====================================================
+          MODEL INFORMATION
+      ====================================================== */}
+
       <section
         id="model"
         className="section-photo model-photo mx-auto max-w-6xl px-5 py-8 sm:px-8"
       >
+
         <div className="mb-5">
+
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
             Model Information
           </h2>
+
         </div>
+
 
         <div className="rounded-card border border-border bg-surface p-6 shadow-soft">
 
-          {/* Best Model */}
+          {/* Currently deployed model */}
+
           <div className="mb-6 rounded-xl border border-accent/20 bg-accent/5 p-5">
+
             <p className="text-xs uppercase tracking-wide text-ink-faint">
               Currently Deployed Model
             </p>
@@ -621,17 +916,25 @@ export default function Dashboard() {
             <p className="mt-1 text-sm text-ink-soft">
               Used by the prediction engine
             </p>
+
           </div>
 
+
           {/* All trained models */}
+
           <div>
+
             <h3 className="mb-4 text-sm font-semibold text-ink">
               Trained Models
             </h3>
 
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
+              {/* Model 1 */}
+
               <div className="rounded-xl bg-canvas p-4">
+
                 <p className="text-xs text-ink-faint">
                   Model 1
                 </p>
@@ -643,9 +946,14 @@ export default function Dashboard() {
                 <p className="mt-1 text-xs text-ink-faint">
                   Regression model
                 </p>
+
               </div>
 
+
+              {/* Model 2 */}
+
               <div className="rounded-xl border border-accent/20 bg-accent/5 p-4">
+
                 <p className="text-xs text-ink-faint">
                   Model 2
                 </p>
@@ -657,9 +965,14 @@ export default function Dashboard() {
                 <p className="mt-1 text-xs font-medium text-accent">
                   Current deployed model
                 </p>
+
               </div>
 
+
+              {/* Model 3 */}
+
               <div className="rounded-xl bg-canvas p-4">
+
                 <p className="text-xs text-ink-faint">
                   Model 3
                 </p>
@@ -671,8 +984,14 @@ export default function Dashboard() {
                 <p className="mt-1 text-xs text-ink-faint">
                   Regression model
                 </p>
+
               </div>
+
+
+              {/* Model 4 */}
+
               <div className="rounded-xl bg-canvas p-4">
+
                 <p className="text-xs text-ink-faint">
                   Model 4
                 </p>
@@ -684,21 +1003,29 @@ export default function Dashboard() {
                 <p className="mt-1 text-xs text-ink-faint">
                   Deep learning model
                 </p>
+
               </div>
 
             </div>
+
           </div>
 
-          {/* Model type */}
+
+          {/* Model description */}
+
           <div className="mt-5 border-t border-border pt-4">
+
             <p className="text-sm text-ink-soft">
               The models were trained and compared to identify a suitable
               regression model for tourism prediction.
             </p>
+
           </div>
 
         </div>
+
       </section>
+
     </main>
   )
 }
