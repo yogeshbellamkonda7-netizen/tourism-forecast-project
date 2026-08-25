@@ -51,10 +51,10 @@ export default function Dashboard() {
   }, [history])
 
   useEffect(() => {
-  getTopCountries().then((data) => {
-    setTopCountries(data.rankings || [])
-  })
-}, [])
+    getTopCountries().then((data) => {
+      setTopCountries(data.rankings || [])
+    })
+  }, [])
 
   const handlePredict = async (payload) => {
     setStatus('loading')
@@ -70,30 +70,30 @@ export default function Dashboard() {
       setResult(response)
       setStatus('success')
       setHistoryLoading(true)
-setHistoryError('')
+      setHistoryError('')
 
-try {
-  const historicalData = await getCountryHistory(payload.country)
-  setCountryHistory(historicalData.history || [])
-} catch (err) {
-  setHistoryError(err.message)
-  setCountryHistory([])
-} finally {
-  setHistoryLoading(false)
-}
+      try {
+        const historicalData = await getCountryHistory(payload.country)
+        setCountryHistory(historicalData.history || [])
+      } catch (err) {
+        setHistoryError(err.message)
+        setCountryHistory([])
+      } finally {
+        setHistoryLoading(false)
+      }
 
-setTopCountriesLoading(true)
-setTopCountriesError('')
+      setTopCountriesLoading(true)
+      setTopCountriesError('')
 
-try {
-  const rankingData = await getTopCountries()
-  setTopCountries(rankingData.rankings || [])
-} catch (err) {
-  setTopCountriesError(err.message)
-  setTopCountries([])
-} finally {
-  setTopCountriesLoading(false)
-}
+      try {
+        const rankingData = await getTopCountries()
+        setTopCountries(rankingData.rankings || [])
+      } catch (err) {
+        setTopCountriesError(err.message)
+        setTopCountries([])
+      } finally {
+        setTopCountriesLoading(false)
+      }
 
       const historyItem = {
         id: Date.now(),
@@ -182,7 +182,7 @@ try {
             />
           </div>
         </div>
-            </section>
+      </section>
 
       {/* Country Historical Analytics */}
       {status === 'success' && (
@@ -294,9 +294,9 @@ try {
 
       {/* Prediction History */}
       <section
-  id="history"
-  className="section-photo history-photo mx-auto max-w-6xl px-5 py-8 sm:px-8"
->
+        id="history"
+        className="section-photo history-photo mx-auto max-w-6xl px-5 py-8 sm:px-8"
+      >
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History size={20} className="text-accent" />
@@ -378,76 +378,76 @@ try {
           </div>
         )}
       </section>
-            
+
 
       {/* Top 3 Predicted Countries */}
-        <section
-  id="top-countries"
-  className="mx-auto max-w-6xl px-5 py-8 sm:px-8"
->
-          <div className="mb-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
-              Top 3 Predicted Countries
-            </h2>
+      <section
+        id="top-countries"
+        className="mx-auto max-w-6xl px-5 py-8 sm:px-8"
+      >
+        <div className="mb-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
+            Top 3 Predicted Countries
+          </h2>
 
-            <p className="mt-1 text-sm text-ink-soft">
-              Countries ranked by predicted tourism receipts
+          <p className="mt-1 text-sm text-ink-soft">
+            Countries ranked by predicted tourism receipts
+          </p>
+        </div>
+
+        {topCountriesLoading ? (
+          <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+            <p className="text-sm text-ink-soft">
+              Calculating rankings...
             </p>
           </div>
-
-          {topCountriesLoading ? (
-            <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
-              <p className="text-sm text-ink-soft">
-                Calculating rankings...
-              </p>
-            </div>
-          ) : topCountriesError ? (
-            <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
-              <p className="text-sm text-signal-high">
-                {topCountriesError}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              {topCountries.map((item) => (
-                <div
-                  key={item.rank}
-                  className="rounded-card border border-border bg-surface p-6 text-center shadow-soft"
-                >
-                  <div className="text-3xl">
-                    {item.rank === 1
-                      ? '🥇'
-                      : item.rank === 2
+        ) : topCountriesError ? (
+          <div className="rounded-card border border-border bg-surface p-8 text-center shadow-soft">
+            <p className="text-sm text-signal-high">
+              {topCountriesError}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {topCountries.map((item) => (
+              <div
+                key={item.rank}
+                className="rounded-card border border-border bg-surface p-6 text-center shadow-soft"
+              >
+                <div className="text-3xl">
+                  {item.rank === 1
+                    ? '🥇'
+                    : item.rank === 2
                       ? '🥈'
                       : '🥉'}
-                  </div>
-
-                  <h3 className="mt-3 text-lg font-semibold text-ink">
-                    {item.country}
-                  </h3>
-
-                  <p className="mt-2 text-sm text-ink-soft">
-                    Predicted Tourism Receipts
-                  </p>
-
-                  <p className="mt-1 text-xl font-semibold text-ink">
-                    {(Number(item.predictedReceipts) / 1_000_000).toLocaleString(
-                        'en-IN',
-                          {
-                                  minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                             }
-                     )}{' '}
-                         M
-                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-      
 
-      <section  id="compare"
+                <h3 className="mt-3 text-lg font-semibold text-ink">
+                  {item.country}
+                </h3>
+
+                <p className="mt-2 text-sm text-ink-soft">
+                  Predicted Tourism Receipts
+                </p>
+
+                <p className="mt-1 text-xl font-semibold text-ink">
+                  {(Number(item.predictedReceipts) / 1_000_000).toLocaleString(
+                    'en-IN',
+                    {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }
+                  )}{' '}
+                  M
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+
+      <section id="compare"
         className="section-photo compare-photo mx-auto max-w-6xl px-5 py-8 sm:px-8"
       >
         <div className="mb-5 flex items-center gap-2">
@@ -465,19 +465,18 @@ try {
                 Country 1
               </label>
 
-              <select
+              <input
+                type="text"
+                list="comparison-countries"
                 value={countryA}
-                onChange={(e) => setCountryA(e.target.value)}
+                onChange={(e) => {
+                  setCountryA(e.target.value)
+                  setCompareError('')
+                }}
+                placeholder="Type or select country"
+                autoComplete="off"
                 className="w-full rounded-xl border border-border bg-canvas px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent"
-              >
-                <option value="">Select country</option>
-
-                {COUNTRIES.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div>
@@ -485,19 +484,23 @@ try {
                 Country 2
               </label>
 
-              <select
-                value={countryB}
-                onChange={(e) => setCountryB(e.target.value)}
+              <input
+                type="text"
+                list="comparison-countries"
+                value={countryA}
+                onChange={(e) => {
+                  setCountryA(e.target.value)
+                  setCompareError('')
+                }}
+                placeholder="Type or select country"
+                autoComplete="off"
                 className="w-full rounded-xl border border-border bg-canvas px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent"
-              >
-                <option value="">Select country</option>
-
+              />
+              <datalist id="comparison-countries">
                 {COUNTRIES.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
+                  <option key={country} value={country} />
                 ))}
-              </select>
+              </datalist>
             </div>
 
           </div>
@@ -669,19 +672,19 @@ try {
                   Regression model
                 </p>
               </div>
-                <div className="rounded-xl bg-canvas p-4">
+              <div className="rounded-xl bg-canvas p-4">
                 <p className="text-xs text-ink-faint">
-                    Model 4
+                  Model 4
                 </p>
 
                 <p className="mt-2 font-semibold text-ink">
-                      Artificial Neural Network
-                 </p>
+                  Artificial Neural Network
+                </p>
 
                 <p className="mt-1 text-xs text-ink-faint">
-                    Deep learning model
-                 </p>
-                 </div>
+                  Deep learning model
+                </p>
+              </div>
 
             </div>
           </div>
