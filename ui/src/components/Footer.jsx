@@ -55,7 +55,7 @@ export default function Footer() {
               </div>
 
               <div>
-                <p className="font-semibold text-ink">Sargayu</p>
+                <p className="font-semibold text-ink">Sarayu</p>
                 <p className="text-sm text-ink-soft">
                   UI / Frontend
                 </p>
