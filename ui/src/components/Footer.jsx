@@ -34,28 +34,28 @@ export default function Footer() {
 
             <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3">
               <div>
-                <p className="font-semibold text-ink">Yogesh</p>
+                <p className="font-semibold text-ink"> Yogesh </p>
                 <p className="text-sm text-ink-soft">
                   Data Collection & Deployment
                 </p>
               </div>
 
               <div>
-                <p className="font-semibold text-ink">Navya Sri</p>
+                <p className="font-semibold text-ink"> Navya Sri </p>
                 <p className="text-sm text-ink-soft">
                   Data Preprocessing
                 </p>
               </div>
 
               <div>
-                <p className="font-semibold text-ink">Bhargavi</p>
+                <p className="font-semibold text-ink"> Bhargavi </p>
                 <p className="text-sm text-ink-soft">
                   ML Models
                 </p>
               </div>
 
               <div>
-                <p className="font-semibold text-ink">Sarayu</p>
+                <p className="font-semibold text-ink"> Sarayu </p>
                 <p className="text-sm text-ink-soft">
                   UI / Frontend
                 </p>
