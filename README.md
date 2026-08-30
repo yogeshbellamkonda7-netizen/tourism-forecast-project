@@ -194,7 +194,7 @@ The frontend will normally run at:
 ```text
 http://localhost:5173
 ```
-## 👥 Project Team
+## 👥 Project Team : Nexora
 
 This project was developed as a team project by:
 
